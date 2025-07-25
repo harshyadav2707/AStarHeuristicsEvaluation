@@ -4,8 +4,8 @@ import seaborn as sns
 import os
 
 # graph_names = ["random512-10-0", "arena","maze512-1-0","16room_002"]
-# graph_names = ["Map18","random512-10-0", "arena","maze512-1-0","16room_002"]
-graph_names = ["Map18"]
+graph_names = ["Map18","random512-10-0", "arena","maze512-1-0","16room_002"]
+# graph_names = ["Map18"]
 
 # Paths
 csv_dir = "./results/csv/"
@@ -181,6 +181,80 @@ y_max = grouped_melted["avg_cost"].max()
 plt.ylim(0, y_max * 1.5)
 plt.tight_layout()
 plt.savefig(save_path + "avg_cost_per_heuristic.png")
+plt.close()
+
+
+# -----------------------------
+# F.
+# -----------------------------
+dual_stats = df.groupby("heuristic")[["path_length", "visited_nodes"]].mean().reset_index()
+
+fig, ax1 = plt.subplots(figsize=(8, 6))
+
+path_color = "darkGrey"   
+visited_color = "grey"
+axis_color = "black"
+
+# Left Y-axis: Path Length
+bar_width = 0.4
+x = range(len(dual_stats))
+
+path_bars = ax1.bar(
+    [i - bar_width/2 for i in x],
+    dual_stats["path_length"],
+    width=bar_width,
+    label="Path Length",
+    color=path_color
+)
+ax1.set_ylabel("Path Length", color=axis_color)
+ax1.tick_params(axis="y", labelcolor=axis_color)
+ax1.yaxis.grid(False)
+
+# Right Y-axis: Visited Nodes
+ax2 = ax1.twinx()
+visited_bars = ax2.bar(
+    [i + bar_width/2 for i in x],
+    dual_stats["visited_nodes"],
+    width=bar_width,
+    label="Visited Nodes",
+    color=visited_color
+)
+ax2.set_ylabel("Visited Nodes", color=axis_color)
+ax2.tick_params(axis="y", labelcolor=axis_color)
+ax2.yaxis.grid(False)
+
+# X-axis
+ax1.set_xticks(x)
+ax1.set_xticklabels(dual_stats["heuristic"])
+ax1.set_xlabel("Heuristic")
+
+# Annotations
+for bar in path_bars:
+    height = bar.get_height()
+    ax1.annotate(f'{height:.2f}', xy=(bar.get_x() + bar.get_width() / 2, height),
+                 xytext=(0, 3), textcoords="offset points", ha='center', fontsize=9)
+
+for bar in visited_bars:
+    height = bar.get_height()
+    ax2.annotate(f'{int(height)}', xy=(bar.get_x() + bar.get_width() / 2, height),
+                 xytext=(0, 3), textcoords="offset points", ha='center', fontsize=9)
+
+# Add top padding
+ax1.margins(y=0.3)
+ax2.margins(y=0.3)
+
+# Combined legend
+lines, labels = [], []
+for ax in [ax1, ax2]:
+    line, label = ax.get_legend_handles_labels()
+    lines += line
+    labels += label
+ax1.legend(lines, labels, loc="upper left")
+
+# Title and layout
+plt.title("Avg Path Length vs Visited Nodes per Heuristic")
+fig.tight_layout()
+plt.savefig(save_path + "dual_axis_path_vs_visited_nodes.png")
 plt.close()
 
 print("✅ All graphs with mean & median successfully generated and saved.")
